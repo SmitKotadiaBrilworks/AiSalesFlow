@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { NextRequest } from "next/server";
 
 const JWT_SECRET =
   process.env.NEXT_PUBLIC_JWT_SECRET || "your-secret-key-change-in-production";
@@ -18,7 +19,6 @@ export function generateToken(payload: JWTPayload): string {
 
 // Verify JWT token
 export function verifyToken(token: string): JWTPayload | null {
-  console.log("verifyToken", token);
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
     return decoded;
@@ -29,7 +29,11 @@ export function verifyToken(token: string): JWTPayload | null {
 }
 
 // Get token from request headers (for API routes)
-export function getTokenFromRequest(request: Request): string | null {
+export function getTokenFromRequest(request: NextRequest): string | null {
+  const cookieToken = request.cookies.get("auth_token")?.value;
+  if (cookieToken) {
+    return cookieToken;
+  }
   const authHeader = request.headers.get("authorization");
   if (authHeader && authHeader.startsWith("Bearer ")) {
     return authHeader.substring(7);

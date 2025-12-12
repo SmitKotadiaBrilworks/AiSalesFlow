@@ -73,6 +73,7 @@ export interface AIAnalysis {
   budget?: string;
   timeline?: string;
   service_type?: string;
+  priority?: string;
   [key: string]: unknown;
 }
 

@@ -1,3 +1,4 @@
+import { getDatabase } from "@/lib/mongodb";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
@@ -9,6 +10,10 @@ export async function POST(request: Request) {
     // if (!validateSignature(signature, body)) {
     //   return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
     // }
+    const db = await getDatabase();
+    db.collection("leads")
+      .watch()
+      .on("change", (change) => {});
 
     console.log("Lead webhook received:", body);
 

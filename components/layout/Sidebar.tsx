@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { LayoutDashboard, Inbox, Users, Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { removeAuthToken } from "@/lib/auth-client";
-import Image from "next/image";
+
 import { AppLogo, AppName } from "../ui/appLogo";
+import { useAuth } from "@/providers/AuthProvider";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -18,11 +18,11 @@ const navItems = [
 
 export function Sidebar({ className }: { className?: string }) {
   const pathname = usePathname();
-  const router = useRouter();
+
+  const { logout } = useAuth();
 
   const handleSignOut = () => {
-    removeAuthToken();
-    router.push("/login");
+    logout();
   };
 
   return (
