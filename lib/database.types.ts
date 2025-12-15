@@ -26,6 +26,13 @@ export interface Tenant {
     }>;
     [key: string]: unknown;
   };
+  email_sync?: {
+    enabled: boolean;
+    inbox_email?: string; // Email address to monitor
+    webhook_secret?: string; // Secret for webhook authentication
+    provider?: "sendgrid" | "mailgun" | "custom"; // Email service provider
+    last_sync?: Date;
+  };
 }
 
 export interface TenantInput {
@@ -82,14 +89,14 @@ export interface Lead {
   tenant_id: ObjectId;
   status: LeadStatus;
   source: string;
+  created_at: Date;
+  updated_at: Date;
   visitor_id?: string | null;
   name?: string | null;
   email?: string | null;
   phone?: string | null;
   summary?: string | null; // AI generated summary
   ai_analysis?: AIAnalysis | null;
-  created_at: Date;
-  updated_at: Date;
 }
 
 export interface LeadInput {

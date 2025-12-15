@@ -15,7 +15,15 @@ import DataTable from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpDown, Search } from "lucide-react";
+import {
+  ArrowUpDown,
+  Search,
+  Sparkles,
+  Calendar,
+  DollarSign,
+  Briefcase,
+  Bot,
+} from "lucide-react";
 
 import {
   Sheet,
@@ -24,11 +32,18 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import { Sparkles, Calendar, DollarSign, Briefcase, Bot } from "lucide-react";
-import { mockLeads } from "@/lib/mock-data";
+import { Lead as DatabaseLead } from "@/lib/database.types";
 
-// Use the shared Lead interface
-export type Lead = (typeof mockLeads)[0];
+// Transform database Lead to table Lead format
+export interface Lead {
+  id: string;
+  name: string | null;
+  email: string | null;
+  status: string;
+  source: string;
+  createdAt: Date;
+  summary?: string | null;
+}
 
 interface LeadSummary {
   budget: string;
@@ -53,7 +68,7 @@ const columns: ColumnDef<Lead>[] = [
       );
     },
     cell: ({ row }) => (
-      <div className="font-medium">{row.getValue("name")}</div>
+      <div className="font-medium">{row.original.name || "Unknown"}</div>
     ),
   },
   {
@@ -67,7 +82,7 @@ const columns: ColumnDef<Lead>[] = [
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
-      const status = row.getValue("status") as string;
+      const status = String(row.getValue("status"));
       const colorMap: Record<string, string> = {
         new: "bg-blue-100 text-blue-700",
         open: "bg-green-100 text-green-700",
@@ -75,7 +90,7 @@ const columns: ColumnDef<Lead>[] = [
         closed: "bg-slate-100 text-slate-700",
       };
       return (
-        <Badge className={colorMap[status] || "bg-slate-100"}>
+        <Badge className={`${colorMap[status] || "bg-slate-100"} capitalize`}>
           {status.replace("_", " ")}
         </Badge>
       );
@@ -103,13 +118,27 @@ const columns: ColumnDef<Lead>[] = [
       );
     },
     cell: ({ row }) => {
-      const date = new Date(row.getValue("createdAt"));
+      const date = new Date(row.original.createdAt);
       return <div className="text-slate-600">{date.toLocaleDateString()}</div>;
     },
   },
 ];
 
-export function LeadsTable({ data }: { data: Lead[] }) {
+// Transform database leads to table format
+function transformLeads(leads: DatabaseLead[]): Lead[] {
+  return leads.map((lead) => ({
+    id: lead._id.toString(),
+    name: lead.name ?? null,
+    email: lead.email ?? null,
+    status: lead.status,
+    source: lead.source,
+    createdAt: lead.created_at,
+    summary: lead.summary ?? null,
+  }));
+}
+
+export function LeadsTable({ data }: Readonly<{ data: DatabaseLead[] }>) {
+  const transformedData = transformLeads(data);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
@@ -129,6 +158,7 @@ export function LeadsTable({ data }: { data: Lead[] }) {
     try {
       const res = await fetch("/api/ai/generate-summary", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ leadId: lead.id }),
       });
       if (res.ok) {
@@ -143,7 +173,7 @@ export function LeadsTable({ data }: { data: Lead[] }) {
   };
 
   const table = useReactTable({
-    data,
+    data: transformedData,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
