@@ -10,12 +10,20 @@ import {
   SortingState,
   ColumnFiltersState,
 } from "@tanstack/react-table";
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import DataTable from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpDown, Search } from "lucide-react";
+import {
+  ArrowUpDown,
+  Search,
+  Sparkles,
+  Calendar,
+  DollarSign,
+  Briefcase,
+  Bot,
+} from "lucide-react";
 
 import {
   Sheet,
@@ -24,11 +32,8 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import { Sparkles, Calendar, DollarSign, Briefcase, Bot } from "lucide-react";
-import { mockLeads } from "@/lib/mock-data";
-
-// Use the shared Lead interface
-export type Lead = (typeof mockLeads)[0];
+import { Lead as DatabaseLead } from "@/lib/database.types";
+import columns, { Lead } from "./LeadsColumns";
 
 interface LeadSummary {
   budget: string;
@@ -37,79 +42,20 @@ interface LeadSummary {
   summary: string;
 }
 
-const columns: ColumnDef<Lead>[] = [
-  {
-    accessorKey: "name",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="hover:bg-slate-100"
-        >
-          Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => (
-      <div className="font-medium">{row.getValue("name")}</div>
-    ),
-  },
-  {
-    accessorKey: "email",
-    header: "Email",
-    cell: ({ row }) => (
-      <div className="text-slate-600">{row.getValue("email")}</div>
-    ),
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => {
-      const status = row.getValue("status") as string;
-      const colorMap: Record<string, string> = {
-        new: "bg-blue-100 text-blue-700",
-        open: "bg-green-100 text-green-700",
-        in_progress: "bg-yellow-100 text-yellow-700",
-        closed: "bg-slate-100 text-slate-700",
-      };
-      return (
-        <Badge className={colorMap[status] || "bg-slate-100"}>
-          {status.replace("_", " ")}
-        </Badge>
-      );
-    },
-  },
-  {
-    accessorKey: "source",
-    header: "Source",
-    cell: ({ row }) => (
-      <div className="text-slate-600">{row.getValue("source")}</div>
-    ),
-  },
-  {
-    accessorKey: "createdAt",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="hover:bg-slate-100"
-        >
-          Date
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => {
-      const date = new Date(row.getValue("createdAt"));
-      return <div className="text-slate-600">{date.toLocaleDateString()}</div>;
-    },
-  },
-];
+// Transform database leads to table format
+function transformLeads(leads: DatabaseLead[]): Lead[] {
+  return leads.map((lead) => ({
+    id: lead._id.toString(),
+    name: lead.name ?? null,
+    email: lead.email ?? null,
+    status: lead.status,
+    source: lead.source,
+    createdAt: lead.created_at,
+    summary: lead.summary ?? null,
+  }));
+}
 
-export function LeadsTable({ data }: { data: Lead[] }) {
+export function LeadsTable({ data }: Readonly<{ data: DatabaseLead[] }>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
@@ -118,33 +64,30 @@ export function LeadsTable({ data }: { data: Lead[] }) {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [summaryData, setSummaryData] = useState<LeadSummary | null>(null);
-  const [isLoadingSummary, setIsLoadingSummary] = useState(false);
 
-  const handleRowClick = async (lead: Lead) => {
-    setSelectedLead(lead);
-    setIsSheetOpen(true);
-    setSummaryData(null);
-    setIsLoadingSummary(true);
+  const transformedData = useMemo(() => transformLeads(data), [data]);
 
-    try {
-      const res = await fetch("/api/ai/generate-summary", {
-        method: "POST",
-        body: JSON.stringify({ leadId: lead.id }),
+  const handleSheetSidebar = useCallback(
+    (lead: Lead) => {
+      setSelectedLead(lead);
+      setIsSheetOpen(true);
+      const summaryObject = data.find(
+        (item) => item._id.toString() === lead.id
+      );
+      if (!summaryObject) return;
+      setSummaryData({
+        budget: summaryObject.ai_analysis?.budget ?? "Not specified",
+        timeline: summaryObject.ai_analysis?.timeline ?? "Not specified",
+        serviceType: summaryObject.ai_analysis?.service_type ?? "Not specified",
+        summary: summaryObject.summary ?? "Not specified",
       });
-      if (res.ok) {
-        const data = await res.json();
-        setSummaryData(data);
-      }
-    } catch (error) {
-      console.error("Failed to fetch summary", error);
-    } finally {
-      setIsLoadingSummary(false);
-    }
-  };
+    },
+    [data]
+  );
 
   const table = useReactTable({
-    data,
-    columns,
+    data: transformedData,
+    columns: columns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -173,15 +116,15 @@ export function LeadsTable({ data }: { data: Lead[] }) {
         </div>
       </div>
 
-      <DataTable
+      <DataTable<Lead, unknown>
         columns={columns}
         table={table}
-        onRowClick={handleRowClick}
+        onRowClick={(data: Lead) => handleSheetSidebar(data)}
         showPagination={true}
       />
 
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent className="sm:max-w-md w-full overflow-y-auto">
+        <SheetContent className="sm:max-w-md w-full overflow-y-auto p-4">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2 text-xl">
               <Bot className="h-6 w-6 text-purple-600" />
@@ -193,16 +136,7 @@ export function LeadsTable({ data }: { data: Lead[] }) {
           </SheetHeader>
 
           <div className="mt-6 space-y-6">
-            {isLoadingSummary ? (
-              <div className="space-y-4 animate-pulse">
-                <div className="h-4 bg-slate-200 rounded w-3/4"></div>
-                <div className="h-20 bg-slate-100 rounded"></div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="h-24 bg-slate-100 rounded"></div>
-                  <div className="h-24 bg-slate-100 rounded"></div>
-                </div>
-              </div>
-            ) : summaryData ? (
+            {summaryData ? (
               <>
                 <div className="bg-purple-50 border border-purple-100 p-4 rounded-lg">
                   <h3 className="text-sm font-semibold text-purple-900 flex items-center mb-2">

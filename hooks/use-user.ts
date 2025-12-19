@@ -8,6 +8,7 @@ export interface UserProfile {
   companyName: string;
   tenantId: string;
   role: string;
+  profile_pic?: string | null;
 }
 
 async function fetchUser(): Promise<UserProfile> {
@@ -22,13 +23,21 @@ async function fetchUser(): Promise<UserProfile> {
   return data.user;
 }
 
-async function updateUser(updates: { full_name?: string; email?: string }) {
+async function updateUser(updates: {
+  full_name?: string;
+  email?: string;
+  profile_pic?: string | null;
+  password?: string;
+}) {
   const res = await fetch("/api/auth/me", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(updates),
   });
-  if (!res.ok) throw new Error("Failed to update user");
+  if (!res.ok) {
+    const errorBody = await res.json();
+    throw new Error(errorBody.error || "Failed to update user");
+  }
   return res.json();
 }
 

@@ -11,11 +11,12 @@ async function getAllLeads(tenantId?: string) {
 
 export const useLeads = ({ tenantId }: { tenantId?: string }) => {
   const leads = useQuery({
-    queryKey: ["leads"],
+    queryKey: ["leads", tenantId],
     queryFn: () => getAllLeads(tenantId),
-    // Add retry logic
     retry: 3,
-    refetchInterval: 1000 * 60,
+    refetchInterval: 1000 * 30, // Refetch every 30 seconds for real-time updates
+    refetchOnWindowFocus: true, // Refetch when user returns to tab
+    refetchOnMount: true, // Refetch when component mounts
     enabled: !!tenantId,
   });
 

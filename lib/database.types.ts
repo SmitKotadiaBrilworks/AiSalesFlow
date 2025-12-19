@@ -26,6 +26,18 @@ export interface Tenant {
     }>;
     [key: string]: unknown;
   };
+  email_sync?: {
+    enabled: boolean;
+    inbox_email?: string; // Email address to monitor
+    webhook_secret?: string; // Secret for webhook authentication
+    provider?: "sendgrid" | "mailgun" | "gmail" | "custom"; // Email service provider
+    last_sync?: Date;
+    gmail_tokens?: {
+      access_token?: string;
+      refresh_token?: string;
+      expiry_date?: number;
+    };
+  };
 }
 
 export interface TenantInput {
@@ -46,6 +58,7 @@ export interface User {
   email: string;
   password: string; // Hashed password
   created_at: Date;
+  profile_pic?: string | null;
 }
 
 export interface UserInput {
@@ -54,6 +67,7 @@ export interface UserInput {
   full_name: string;
   email: string;
   password: string; // Plain password (will be hashed)
+  profile_pic?: string | null;
 }
 
 export interface UserPublic {
@@ -63,6 +77,7 @@ export interface UserPublic {
   full_name: string;
   email: string;
   created_at: Date;
+  profile_pic?: string | null;
 }
 
 // ============================================
@@ -82,14 +97,14 @@ export interface Lead {
   tenant_id: ObjectId;
   status: LeadStatus;
   source: string;
+  created_at: Date;
+  updated_at: Date;
   visitor_id?: string | null;
   name?: string | null;
   email?: string | null;
   phone?: string | null;
   summary?: string | null; // AI generated summary
   ai_analysis?: AIAnalysis | null;
-  created_at: Date;
-  updated_at: Date;
 }
 
 export interface LeadInput {

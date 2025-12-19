@@ -5,7 +5,11 @@ if (!process.env.NEXT_PUBLIC_MONGO_URL) {
 }
 
 const uri = process.env.NEXT_PUBLIC_MONGO_URL;
-const options = {};
+const options = {
+  connectTimeoutMS: 10000,
+  socketTimeoutMS: 45000,
+  tls: true,
+};
 
 let client: MongoClient;
 const clientPromise: Promise<MongoClient> = (() => {

@@ -3,6 +3,7 @@ import { ObjectId } from "mongodb";
 import { getDatabase } from "@/lib/mongodb";
 import { verifyToken, getTokenFromRequest } from "@/lib/auth";
 import { NextRequest } from "next/server";
+import { hashPassword } from "@/lib/authPassword";
 
 export async function GET(request: NextRequest) {
   try {
@@ -49,6 +50,7 @@ export async function GET(request: NextRequest) {
         companyName: tenant?.name || "",
         tenantId: user.tenant_id?.toString(),
         role: user.role,
+        profile_pic: user.profile_pic || null,
       },
     });
   } catch (error) {
@@ -68,26 +70,43 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
 
     const body = await request.json();
-    const { full_name, email } = body; // Allow updating name and email
+    const { full_name, email, profile_pic, password } = body;
 
-    if (!full_name && !email) {
+    if (!full_name && !email && !profile_pic && !password) {
       return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
     }
 
     const db = await getDatabase();
-    const updates: Record<string, string | Date> = {};
+
+    interface UserUpdates {
+      full_name?: string;
+      email?: string;
+      profile_pic?: string | null;
+      password?: string;
+      updated_at: Date;
+    }
+
+    const updates: UserUpdates = {
+      updated_at: new Date(),
+    };
+
     if (full_name) updates.full_name = full_name;
     if (email) updates.email = email;
+    if (profile_pic !== undefined) updates.profile_pic = profile_pic;
 
-    await db.collection("users").updateOne(
-      { _id: new ObjectId(payload.userId) },
-      {
-        $set: {
-          ...updates,
-          updated_at: new Date(),
-        },
+    if (password) {
+      if (password.length < 8) {
+        return NextResponse.json(
+          { error: "Password must be at least 8 characters" },
+          { status: 400 }
+        );
       }
-    );
+      updates.password = await hashPassword(password);
+    }
+
+    await db
+      .collection("users")
+      .updateOne({ _id: new ObjectId(payload.userId) }, { $set: updates });
 
     return NextResponse.json({ success: true });
   } catch (error) {
