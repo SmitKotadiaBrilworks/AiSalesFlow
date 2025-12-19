@@ -22,7 +22,8 @@ export async function generateLeadSummary(
 
   try {
     const prompt = `
-      Analyze the following message from a potential lead.
+    Lead is a person who is interested in your product/service and is looking for a solution. OR Lead maybe the quotation or interest or inquiry request for product/service.
+      Analyze the following message from a potential lead. If it's not a lead then return null in response.
       Extract the following information:
       1. Budget: (Estimate if mentioned, e.g. "$5000", or "Not specified")
       2. Timeline: (Estimate if mentioned, e.g. "2 months", or "Not specified")
@@ -47,7 +48,9 @@ export async function generateLeadSummary(
       model: "gemini-2.5-flash",
       contents: prompt,
     });
-    const text = result.text || "";
+    const text = result.text || null;
+
+    if (!text) return null;
 
     // Clean up markdown code blocks if present
     const jsonStr = text

@@ -30,8 +30,13 @@ export interface Tenant {
     enabled: boolean;
     inbox_email?: string; // Email address to monitor
     webhook_secret?: string; // Secret for webhook authentication
-    provider?: "sendgrid" | "mailgun" | "custom"; // Email service provider
+    provider?: "sendgrid" | "mailgun" | "gmail" | "custom"; // Email service provider
     last_sync?: Date;
+    gmail_tokens?: {
+      access_token?: string;
+      refresh_token?: string;
+      expiry_date?: number;
+    };
   };
 }
 
@@ -53,6 +58,7 @@ export interface User {
   email: string;
   password: string; // Hashed password
   created_at: Date;
+  profile_pic?: string | null;
 }
 
 export interface UserInput {
@@ -61,6 +67,7 @@ export interface UserInput {
   full_name: string;
   email: string;
   password: string; // Plain password (will be hashed)
+  profile_pic?: string | null;
 }
 
 export interface UserPublic {
@@ -70,6 +77,7 @@ export interface UserPublic {
   full_name: string;
   email: string;
   created_at: Date;
+  profile_pic?: string | null;
 }
 
 // ============================================

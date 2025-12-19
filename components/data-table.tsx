@@ -55,6 +55,8 @@ export default function DataTable<TData, TValue>({
 
   const handleRowClick = React.useCallback(
     (e: React.MouseEvent<HTMLTableCellElement>, row: TData) => {
+      e.preventDefault();
+      e.stopPropagation();
       const target = e.target as HTMLElement;
       // Check if the click is on or within a TableCell
       const cell = target.closest("td");
