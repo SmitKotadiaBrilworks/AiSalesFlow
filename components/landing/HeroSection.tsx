@@ -7,7 +7,7 @@ import { ArrowRight, Sparkles } from "lucide-react";
 
 export function HeroSection() {
   return (
-    <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50">
+    <section className="relative min-w-full flex items-center justify-center overflow-hidden bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div
@@ -36,7 +36,7 @@ export function HeroSection() {
         />
       </div>
 
-      <div className="relative z-10 max-w-6xl mx-auto px-6 py-20 text-center">
+      <div className="relative z-10 max-w-6xl mx-auto px-6 py-10 mt-20 text-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -75,22 +75,22 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.3 }}
-          className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+          className="flex flex-row gap-4 justify-center items-center"
         >
           <Link href="/login">
             <Button
               size="lg"
-              className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-8 py-6 text-lg shadow-lg hover:shadow-xl transition-all"
+              className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-6 py-5 md:px-8 md:py-6 text-lg shadow-lg hover:shadow-xl transition-all"
             >
               Start Free Trial
-              <ArrowRight className="ml-2 h-5 w-5" />
+              <ArrowRight className="h-5 w-5 md:!h-5 md:!w-5" />
             </Button>
           </Link>
           <Link href="#demo">
             <Button
               size="lg"
               variant="outline"
-              className="px-8 py-6 text-lg border-2 border-slate-300 hover:border-indigo-600 hover:text-indigo-600 transition-all"
+              className="px-6 py-5 md:px-8 md:py-6 text-base md:text-lg border-2 border-slate-300 hover:border-indigo-600 hover:text-indigo-600 transition-all"
             >
               Watch Demo
             </Button>
@@ -98,7 +98,7 @@ export function HeroSection() {
         </motion.div>
 
         {/* Floating cards animation */}
-        <div className="relative mt-16 h-64">
+        <div className="relative mt-16 h-40 md:h-32">
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
@@ -119,8 +119,8 @@ export function HeroSection() {
                     New Lead Captured
                   </div>
                   <div className="text-slate-900 font-medium">
-                    "Hi! I'm interested in your services for enterprise
-                    clients..."
+                    &quot;Hi! I&apos;m interested in your services for
+                    enterprise clients...&quot;
                   </div>
                 </div>
                 <div className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">

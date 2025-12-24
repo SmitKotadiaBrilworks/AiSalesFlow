@@ -35,12 +35,12 @@ interface StatsCardsProps {
 export function StatsCards({ stats }: StatsCardsProps) {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <Card className="hover:shadow-lg transition-shadow">
+      <Card className="hover:shadow-lg transition-shadow gap-2">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
           <Users className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
-        <CardContent>
+        <CardContent className="mt-0">
           <div className="text-2xl font-bold">{stats.totalLeads.value}</div>
           <div className="flex items-center text-xs text-muted-foreground mt-1">
             {stats.totalLeads.trend === "up" ? (
@@ -63,7 +63,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
         </CardContent>
       </Card>
 
-      <Card className="hover:shadow-lg transition-shadow">
+      <Card className="hover:shadow-lg transition-shadow gap-2">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">
             Active Conversations
@@ -80,7 +80,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
         </CardContent>
       </Card>
 
-      <Card className="hover:shadow-lg transition-shadow">
+      <Card className="hover:shadow-lg transition-shadow gap-2">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Closed Deals</CardTitle>
           <CheckCircle className="h-4 w-4 text-muted-foreground" />
@@ -93,7 +93,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
         </CardContent>
       </Card>
 
-      <Card className="hover:shadow-lg transition-shadow">
+      <Card className="hover:shadow-lg transition-shadow gap-2">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">
             Avg. Response Time

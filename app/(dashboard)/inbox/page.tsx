@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Send, MoreVertical, Phone, Video } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
 // Mock data
@@ -204,7 +204,7 @@ export default function InboxPage() {
                   size="sm"
                   className="text-xs text-indigo-600 border-indigo-200 bg-indigo-50 hover:bg-indigo-100"
                 >
-                  ✨ AI Suggest: "Here is the pricing breakdown..."
+                  ✨ AI Suggest: &quot;Here is the pricing breakdown...&quot;
                 </Button>
               </div>
             </div>

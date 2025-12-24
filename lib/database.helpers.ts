@@ -159,7 +159,7 @@ export async function getLeadsByTenant(
     limit?: number;
     skip?: number;
   }
-): Promise<Lead[]> {
+): Promise<Lead[] | Error> {
   const id = typeof tenantId === "string" ? new ObjectId(tenantId) : tenantId;
   const query: { tenant_id: ObjectId; status?: string } = { tenant_id: id };
   if (options?.status) {
@@ -177,7 +177,7 @@ export async function getLeadsByTenant(
   if (options?.limit) {
     cursor = cursor.limit(options.limit);
   }
-
+  console.log("cursor", cursor);
   return cursor.toArray();
 }
 

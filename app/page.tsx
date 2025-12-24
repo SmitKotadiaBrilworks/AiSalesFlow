@@ -1,27 +1,69 @@
+"use client";
 import { ChatWidget } from "@/components/chat-widget/ChatWidget";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { FeatureGrid } from "@/components/landing/FeatureGrid";
 import { HowItWorks } from "@/components/landing/HowItWorks";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
+import { AppLogo, AppName } from "@/components/ui/appLogo";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Menu } from "lucide-react";
+import { useState } from "react";
+
+const navItems = [
+  { href: "#features", label: "Features" },
+  { href: "#how-it-works", label: "How It Works" },
+  { href: "/dashboard", label: "Dashboard" },
+];
 
 export default function LandingPage() {
+  const [open, setOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <header className="absolute top-0 left-0 right-0 z-50 h-20 flex items-center justify-between px-8 bg-white/80 backdrop-blur-md border-b border-slate-200">
-        <div className="font-bold text-2xl bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-          AI SalesFlow
-        </div>
+      <header className="fixed top-0 left-0 right-0 z-50 h-20 flex items-center justify-between px-4 md:px-8 bg-white/80 backdrop-blur-md border-b border-slate-200">
+        <Link href="/" className="flex items-center gap-2">
+          <AppLogo logoClassName="h-12 md:h-10" />
+          <AppName className="hidden sm:inline" />
+        </Link>
         <nav className="flex gap-4 items-center">
-          <Link href="#features">
-            <Button variant="ghost">Features</Button>
-          </Link>
-          <Link href="#how-it-works">
-            <Button variant="ghost">How It Works</Button>
-          </Link>
-          <Link href="/dashboard">
-            <Button variant="ghost">Dashboard</Button>
-          </Link>
+          <div className="flex sm:hidden order-2">
+            <DropdownMenu open={open} onOpenChange={setOpen}>
+              <DropdownMenuTrigger>
+                <Menu size={25} />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                {navItems.map((item, index) => (
+                  <>
+                    {index ? (
+                      <DropdownMenuSeparator className="bg-gray-200 mx-1" />
+                    ) : null}
+
+                    <DropdownMenuItem key={item.href} asChild className="py-2">
+                      <Link href={item.href} scroll={true}>
+                        {item.label}
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          <div className="hidden sm:flex">
+            {navItems.map((item) => (
+              <Link key={item.href} href={item.href}>
+                <Button variant="ghost">{item.label}</Button>
+              </Link>
+            ))}
+          </div>
+
           <Link href="/login">
             <Button className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700">
               Sign In
@@ -61,14 +103,11 @@ export default function LandingPage() {
         </section>
       </main>
 
-      <footer className="py-12 bg-slate-900 text-slate-400 text-center">
+      <footer className="py-7 bg-slate-900 text-slate-400 text-center">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent mb-4">
-            AI SalesFlow
-          </div>
           <p className="text-sm">
-            © 2024 AI SalesFlow. All rights reserved. Built with ❤️ by
-            Brilworks.
+            {`© ${new Date().getFullYear()} AI SalesFlow. All rights reserved. Built with ❤️ by
+            Brilworks.`}
           </p>
         </div>
       </footer>

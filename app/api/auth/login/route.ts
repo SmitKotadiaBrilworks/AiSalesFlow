@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { getDatabase } from "@/lib/mongodb";
-import { comparePassword, generateToken } from "@/lib/auth";
-
+import { generateToken } from "@/lib/auth";
+import { comparePassword } from "@/lib/authPassword";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -60,7 +60,8 @@ export async function POST(request: Request) {
       tenantId: tenantId?.toString(),
     });
 
-    return NextResponse.json({
+    // Create response with user data
+    const response = NextResponse.json({
       success: true,
       message: "Login successful",
       token,
@@ -73,6 +74,21 @@ export async function POST(request: Request) {
         role: user.role,
       },
     });
+
+    // Set cookie for middleware to access
+    // Cookie expires in 7 days (matching JWT expiration)
+    const expires = new Date();
+    expires.setTime(expires.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    response.cookies.set("auth_token", token, {
+      expires,
+      path: "/",
+      sameSite: "lax",
+      httpOnly: false, // Set to false so client-side JS can also read it
+      secure: process.env.NODE_ENV === "production", // Only secure in production
+    });
+
+    return response;
   } catch (error) {
     console.error("Login error:", error);
     return NextResponse.json({ error: "Failed to login" }, { status: 500 });

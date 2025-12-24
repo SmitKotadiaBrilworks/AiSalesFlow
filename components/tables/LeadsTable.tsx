@@ -6,107 +6,88 @@ import {
   getSortedRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
-  flexRender,
   ColumnDef,
   SortingState,
   ColumnFiltersState,
 } from "@tanstack/react-table";
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import DataTable from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpDown, Search } from "lucide-react";
+import {
+  ArrowUpDown,
+  Search,
+  Sparkles,
+  Calendar,
+  DollarSign,
+  Briefcase,
+  Bot,
+} from "lucide-react";
 
-export interface Lead {
-  id: string;
-  name: string;
-  email: string;
-  status: "new" | "open" | "in_progress" | "closed";
-  source: string;
-  createdAt: string;
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import { Lead as DatabaseLead } from "@/lib/database.types";
+import columns, { Lead } from "./LeadsColumns";
+
+interface LeadSummary {
+  budget: string;
+  timeline: string;
+  serviceType: string;
   summary: string;
 }
 
-const columns: ColumnDef<Lead>[] = [
-  {
-    accessorKey: "name",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="hover:bg-slate-100"
-        >
-          Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => (
-      <div className="font-medium">{row.getValue("name")}</div>
-    ),
-  },
-  {
-    accessorKey: "email",
-    header: "Email",
-    cell: ({ row }) => (
-      <div className="text-slate-600">{row.getValue("email")}</div>
-    ),
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => {
-      const status = row.getValue("status") as string;
-      const colorMap: Record<string, string> = {
-        new: "bg-blue-100 text-blue-700",
-        open: "bg-green-100 text-green-700",
-        in_progress: "bg-yellow-100 text-yellow-700",
-        closed: "bg-slate-100 text-slate-700",
-      };
-      return (
-        <Badge className={colorMap[status] || "bg-slate-100"}>
-          {status.replace("_", " ")}
-        </Badge>
-      );
-    },
-  },
-  {
-    accessorKey: "source",
-    header: "Source",
-    cell: ({ row }) => (
-      <div className="text-slate-600">{row.getValue("source")}</div>
-    ),
-  },
-  {
-    accessorKey: "createdAt",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="hover:bg-slate-100"
-        >
-          Date
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => {
-      const date = new Date(row.getValue("createdAt"));
-      return <div className="text-slate-600">{date.toLocaleDateString()}</div>;
-    },
-  },
-];
+// Transform database leads to table format
+function transformLeads(leads: DatabaseLead[]): Lead[] {
+  return leads.map((lead) => ({
+    id: lead._id.toString(),
+    name: lead.name ?? null,
+    email: lead.email ?? null,
+    status: lead.status,
+    source: lead.source,
+    createdAt: lead.created_at,
+    summary: lead.summary ?? null,
+  }));
+}
 
-export function LeadsTable({ data }: { data: Lead[] }) {
+export function LeadsTable({ data }: Readonly<{ data: DatabaseLead[] }>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
 
+  // AI Summary State
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [summaryData, setSummaryData] = useState<LeadSummary | null>(null);
+
+  const transformedData = useMemo(() => transformLeads(data), [data]);
+
+  const handleSheetSidebar = useCallback(
+    (lead: Lead) => {
+      setSelectedLead(lead);
+      setIsSheetOpen(true);
+      const summaryObject = data.find(
+        (item) => item._id.toString() === lead.id
+      );
+      if (!summaryObject) return;
+      setSummaryData({
+        budget: summaryObject.ai_analysis?.budget ?? "Not specified",
+        timeline: summaryObject.ai_analysis?.timeline ?? "Not specified",
+        serviceType: summaryObject.ai_analysis?.service_type ?? "Not specified",
+        summary: summaryObject.summary ?? "Not specified",
+      });
+    },
+    [data]
+  );
+
   const table = useReactTable({
-    data,
-    columns,
+    data: transformedData,
+    columns: columns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -135,82 +116,84 @@ export function LeadsTable({ data }: { data: Lead[] }) {
         </div>
       </div>
 
-      <div className="rounded-lg border border-slate-200 overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-slate-50">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className="px-4 py-3 text-left text-sm font-semibold text-slate-700"
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody className="divide-y divide-slate-200">
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <tr
-                  key={row.id}
-                  className="hover:bg-slate-50 transition-colors cursor-pointer"
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-4 py-3 text-sm">
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td
-                  colSpan={columns.length}
-                  className="px-4 py-12 text-center text-slate-500"
-                >
-                  No leads found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <DataTable<Lead, unknown>
+        columns={columns}
+        table={table}
+        onRowClick={(data: Lead) => handleSheetSidebar(data)}
+        showPagination={true}
+      />
 
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-slate-600">
-          Showing {table.getRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} lead(s)
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
-        </div>
-      </div>
+      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <SheetContent className="sm:max-w-md w-full overflow-y-auto p-4">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2 text-xl">
+              <Bot className="h-6 w-6 text-purple-600" />
+              AI Lead Insights
+            </SheetTitle>
+            <SheetDescription>
+              Analysis for {selectedLead?.name}
+            </SheetDescription>
+          </SheetHeader>
+
+          <div className="mt-6 space-y-6">
+            {summaryData ? (
+              <>
+                <div className="bg-purple-50 border border-purple-100 p-4 rounded-lg">
+                  <h3 className="text-sm font-semibold text-purple-900 flex items-center mb-2">
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    AI Summary
+                  </h3>
+                  <p className="text-sm text-purple-800 leading-relaxed">
+                    {summaryData.summary}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="p-4 border rounded-lg bg-white shadow-sm">
+                    <div className="flex items-center gap-2 text-slate-500 mb-1">
+                      <DollarSign className="h-4 w-4" />
+                      <span className="text-xs font-medium uppercase tracking-wider">
+                        Budget
+                      </span>
+                    </div>
+                    <div className="font-semibold text-slate-900 pl-6">
+                      {summaryData.budget}
+                    </div>
+                  </div>
+
+                  <div className="p-4 border rounded-lg bg-white shadow-sm">
+                    <div className="flex items-center gap-2 text-slate-500 mb-1">
+                      <Calendar className="h-4 w-4" />
+                      <span className="text-xs font-medium uppercase tracking-wider">
+                        Timeline
+                      </span>
+                    </div>
+                    <div className="font-semibold text-slate-900 pl-6">
+                      {summaryData.timeline}
+                    </div>
+                  </div>
+
+                  <div className="p-4 border rounded-lg bg-white shadow-sm">
+                    <div className="flex items-center gap-2 text-slate-500 mb-1">
+                      <Briefcase className="h-4 w-4" />
+                      <span className="text-xs font-medium uppercase tracking-wider">
+                        Service Type
+                      </span>
+                    </div>
+                    <div className="font-semibold text-slate-900 pl-6">
+                      {summaryData.serviceType}
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="text-center text-slate-500 py-8">
+                Unable to load insights.
+              </div>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

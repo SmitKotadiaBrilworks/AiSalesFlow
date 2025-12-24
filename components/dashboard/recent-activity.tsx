@@ -52,7 +52,7 @@ export function RecentActivity({ activities }: RecentActivityProps) {
   }
 
   return (
-    <Card className="col-span-3 hover:shadow-lg transition-shadow">
+    <Card className="col-span-4 md:col-span-3 hover:shadow-lg transition-shadow">
       <CardHeader>
         <CardTitle>Recent Activity</CardTitle>
       </CardHeader>

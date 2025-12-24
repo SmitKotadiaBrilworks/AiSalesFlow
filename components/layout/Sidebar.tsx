@@ -3,15 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import {
-  LayoutDashboard,
-  Inbox,
-  Users,
-  Settings,
-  LogOut,
-  MessageSquare,
-} from "lucide-react";
+import { LayoutDashboard, Inbox, Users, Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+import { AppLogo, AppName } from "../ui/appLogo";
+import { useAuth } from "@/providers/AuthProvider";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -23,35 +19,40 @@ const navItems = [
 export function Sidebar({ className }: { className?: string }) {
   const pathname = usePathname();
 
+  const { logout } = useAuth();
+
+  const handleSignOut = () => {
+    logout();
+  };
+
   return (
     <div
       className={cn(
-        "flex h-full flex-col bg-slate-900 text-white w-64",
+        "flex h-full flex-col bg-white text-white w-56 md:w-64 shadow-lg",
         className
       )}
     >
       <div className="p-6">
-        <div className="flex items-center gap-2 font-bold text-xl">
-          <MessageSquare className="h-6 w-6 text-indigo-400" />
-          <span>AI SalesFlow</span>
+        <div className="flex items-center justify-start gap-2">
+          <AppLogo height={70} width={70} logoClassName="h-10 md:h-12" />
+          <AppName className="text-lg md:text-2xl" />
         </div>
       </div>
 
-      <nav className="flex-1 px-4 space-y-2">
+      <nav className="flex-1 px-4 space-y-2 md:space-y-3 md:mt-5">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive =
             pathname === item.href || pathname?.startsWith(item.href + "/");
-
           return (
             <Link
               key={item.href}
-              href={item.href}
+              href={item.href === "/settings" ? "/settings/general" : item.href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm font-medium",
+                "flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm md:text-lg font-medium cursor-pointer",
                 isActive
                   ? "bg-indigo-600 text-white"
-                  : "text-slate-400 hover:text-white hover:bg-slate-800"
+                  : "text-gray-500 hover:text-white hover:bg-slate-400"
               )}
             >
               <Icon className="h-5 w-5" />
@@ -61,12 +62,13 @@ export function Sidebar({ className }: { className?: string }) {
         })}
       </nav>
 
-      <div className="p-4 border-t border-slate-800">
+      <div className="p-4">
         <Button
           variant="ghost"
-          className="w-full justify-start text-slate-400 hover:text-white hover:bg-slate-800 gap-3"
+          onClick={handleSignOut}
+          className="text-sm md:text-base w-full justify-start text-white hover:text-white bg-red-700 hover:bg-red-600 gap-3 cursor-pointer py-[22px]"
         >
-          <LogOut className="h-5 w-5" />
+          <LogOut className="!h-5 !w-5" />
           Sign Out
         </Button>
       </div>

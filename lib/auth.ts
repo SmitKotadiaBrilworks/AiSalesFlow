@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
+import { NextRequest } from "next/server";
 
 const JWT_SECRET =
   process.env.NEXT_PUBLIC_JWT_SECRET || "your-secret-key-change-in-production";
@@ -23,28 +23,40 @@ export function verifyToken(token: string): JWTPayload | null {
     const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
     return decoded;
   } catch (error) {
+    console.log("error", error);
     return null;
   }
 }
 
-// Hash password
-export async function hashPassword(password: string): Promise<string> {
-  return bcrypt.hash(password, 10);
-}
-
-// Compare password
-export async function comparePassword(
-  password: string,
-  hashedPassword: string
-): Promise<boolean> {
-  return bcrypt.compare(password, hashedPassword);
-}
-
-// Get token from request headers
-export function getTokenFromRequest(request: Request): string | null {
+// Get token from request headers (for API routes)
+export function getTokenFromRequest(request: NextRequest): string | null {
+  const cookieToken = request.cookies.get("auth_token")?.value;
+  if (cookieToken) {
+    return cookieToken;
+  }
   const authHeader = request.headers.get("authorization");
   if (authHeader && authHeader.startsWith("Bearer ")) {
     return authHeader.substring(7);
   }
+  return null;
+}
+
+// Get token from NextRequest (for middleware - supports cookies and headers)
+export function getTokenFromNextRequest(request: {
+  cookies: { get: (name: string) => { value: string } | undefined };
+  headers: { get: (name: string) => string | null };
+}): string | null {
+  // First try cookie (for page navigation)
+  const cookieToken = request.cookies.get("auth_token")?.value;
+  if (cookieToken) {
+    return cookieToken;
+  }
+
+  // Fallback to Authorization header (for API requests)
+  const authHeader = request.headers.get("authorization");
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    return authHeader.substring(7);
+  }
+
   return null;
 }

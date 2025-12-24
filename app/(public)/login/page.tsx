@@ -14,14 +14,15 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { setAuthToken } from "@/lib/auth-client";
+import { AppLogo, AppName } from "@/components/ui/appLogo";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   useEffect(() => {
     if (searchParams.get("registered") === "true") {
@@ -51,14 +52,16 @@ export default function LoginPage() {
         return;
       }
 
-      // Store token
+      // Store token in localStorage (cookie is already set by API)
       if (data.token) {
         setAuthToken(data.token);
       }
-
-      // Redirect to dashboard
-      router.push("/dashboard");
+      console.log("data", data);
+      const redirectUrl = searchParams.get("redirect") || "/dashboard";
+      console.log("redirectUrl", redirectUrl);
+      globalThis.window.location.href = redirectUrl;
     } catch (err) {
+      console.error(err);
       setError("An error occurred. Please try again.");
       setLoading(false);
     }
@@ -72,13 +75,11 @@ export default function LoginPage() {
         transition={{ duration: 0.6 }}
         className="w-full max-w-md"
       >
-        <div className="text-center mb-8">
-          <Link href="/">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
-              AI SalesFlow
-            </h1>
+        <div className="text-center mb-5">
+          <Link href="/" className="flex flex-col items-center gap-1">
+            <AppLogo height={70} width={70} logoClassName="h-14" />
+            <AppName />
           </Link>
-          <p className="text-slate-600">Sign in to your account</p>
         </div>
 
         <Card className="border-slate-200 shadow-xl">

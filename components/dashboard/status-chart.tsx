@@ -61,7 +61,7 @@ export function StatusChart({ data }: StatusChartProps) {
   const total = data.reduce((sum, item) => sum + item.count, 0);
 
   return (
-    <Card className="col-span-3 hover:shadow-lg transition-shadow">
+    <Card className="col-span-4 md:col-span-3 hover:shadow-lg transition-shadow">
       <CardHeader>
         <CardTitle>Leads by Status</CardTitle>
       </CardHeader>

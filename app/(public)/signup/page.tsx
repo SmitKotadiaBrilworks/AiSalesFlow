@@ -17,6 +17,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { setAuthToken } from "@/lib/auth-client";
+import Image from "next/image";
+import { AppLogo, AppName } from "@/components/ui/appLogo";
 
 const signUpSchema = z
   .object({
@@ -90,12 +92,11 @@ export default function SignUpPage() {
         return;
       }
 
-      // Store token
+      // Store token in localStorage (cookie is already set by API)
       if (data.token) {
         setAuthToken(data.token);
       }
 
-      // Redirect to dashboard
       router.push("/dashboard");
     } catch (err) {
       setError("An error occurred. Please try again.");
@@ -112,20 +113,16 @@ export default function SignUpPage() {
         className="w-full max-w-md"
       >
         <div className="text-center mb-8">
-          <Link href="/">
-            <h1 className="text-3xl font-bold bg-linear-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
-              AI SalesFlow
-            </h1>
+          <Link href="/" className="flex flex-col items-center gap-1">
+            <AppLogo height={70} width={70} logoClassName="h-14" />
+            <AppName />
           </Link>
-          <p className="text-slate-600">Create your account</p>
         </div>
 
         <Card className="border-slate-200 shadow-xl">
           <CardHeader>
-            <CardTitle>Get Started Free</CardTitle>
-            <CardDescription>
-              No credit card required. Start capturing leads in 2 minutes.
-            </CardDescription>
+            <CardTitle>Create your account</CardTitle>
+            <CardDescription>Get Started Free </CardDescription>
           </CardHeader>
           <CardContent>
             {error && (

@@ -31,8 +31,7 @@ export async function uploadImage(
     public_id?: string;
   }
 ) {
-  const folder =
-    options?.folder || "assets/media_library/folders/home/sales_force";
+  const folder = options?.folder || "/sales_flow/profile_images";
 
   try {
     const result = await cloudinary.uploader.upload(file as string, {
@@ -58,7 +57,7 @@ export async function uploadDocument(
   return uploadImage(file, {
     ...options,
     resource_type: "raw",
-    folder: options?.folder || "assets/media_library/folders/home/sales_force",
+    folder: options?.folder || "/sales_flow/documents",
   });
 }
 

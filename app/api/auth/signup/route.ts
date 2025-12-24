@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getDatabase } from "@/lib/mongodb";
-import { hashPassword, generateToken } from "@/lib/auth";
+import { generateToken } from "@/lib/auth";
+import { hashPassword } from "@/lib/authPassword";
+
 import { z } from "zod";
 
 const signUpSchema = z.object({
@@ -70,7 +72,8 @@ export async function POST(request: Request) {
       tenantId: tenantId.toString(),
     });
 
-    return NextResponse.json(
+    // Create response with user data
+    const response = NextResponse.json(
       {
         success: true,
         message: "Account created successfully",
@@ -85,6 +88,21 @@ export async function POST(request: Request) {
       },
       { status: 201 }
     );
+
+    // Set cookie for middleware to access
+    // Cookie expires in 7 days (matching JWT expiration)
+    const expires = new Date();
+    expires.setTime(expires.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    response.cookies.set("auth_token", token, {
+      expires,
+      path: "/",
+      sameSite: "lax",
+      httpOnly: false, // Set to false so client-side JS can also read it
+      secure: process.env.NODE_ENV === "production", // Only secure in production
+    });
+
+    return response;
   } catch (error) {
     console.error("Signup error:", error);
     return NextResponse.json(

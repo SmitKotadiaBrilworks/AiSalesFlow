@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { getDatabase } from "@/lib/mongodb";
 import { verifyToken, getTokenFromRequest } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { hashPassword } from "@/lib/authPassword";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     const token = getTokenFromRequest(request);
-
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -26,7 +27,7 @@ export async function GET(request: Request) {
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
-
+    console.log("user", user);
     // Get tenant info
     const tenantId =
       user.tenant_id instanceof ObjectId
@@ -49,10 +50,96 @@ export async function GET(request: Request) {
         companyName: tenant?.name || "",
         tenantId: user.tenant_id?.toString(),
         role: user.role,
+        profile_pic: user.profile_pic || null,
       },
     });
   } catch (error) {
     console.error("Get user error:", error);
     return NextResponse.json({ error: "Failed to get user" }, { status: 500 });
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const token = getTokenFromRequest(request);
+    if (!token)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const payload = verifyToken(token);
+    if (!payload)
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+
+    const body = await request.json();
+    const { full_name, email, profile_pic, password } = body;
+
+    if (!full_name && !email && !profile_pic && !password) {
+      return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
+    }
+
+    const db = await getDatabase();
+
+    interface UserUpdates {
+      full_name?: string;
+      email?: string;
+      profile_pic?: string | null;
+      password?: string;
+      updated_at: Date;
+    }
+
+    const updates: UserUpdates = {
+      updated_at: new Date(),
+    };
+
+    if (full_name) updates.full_name = full_name;
+    if (email) updates.email = email;
+    if (profile_pic !== undefined) updates.profile_pic = profile_pic;
+
+    if (password) {
+      if (password.length < 8) {
+        return NextResponse.json(
+          { error: "Password must be at least 8 characters" },
+          { status: 400 }
+        );
+      }
+      updates.password = await hashPassword(password);
+    }
+
+    await db
+      .collection("users")
+      .updateOne({ _id: new ObjectId(payload.userId) }, { $set: updates });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Update user error:", error);
+    return NextResponse.json(
+      { error: "Failed to update user" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const token = getTokenFromRequest(request);
+    if (!token)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const payload = verifyToken(token);
+    if (!payload)
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+
+    const db = await getDatabase();
+
+    await db.collection("users").deleteOne({
+      _id: new ObjectId(payload.userId),
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Delete user error:", error);
+    return NextResponse.json(
+      { error: "Failed to delete user" },
+      { status: 500 }
+    );
   }
 }

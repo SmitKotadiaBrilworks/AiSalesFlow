@@ -1,59 +1,84 @@
 "use client";
 
-import { LeadsTable, Lead } from "@/components/tables/LeadsTable";
+import { LeadsTable } from "@/components/tables/LeadsTable";
+import { AddLeadDialog } from "@/components/leads/AddLeadDialog";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
 
-// Mock data - in real app, fetch from Supabase
-const mockLeads: Lead[] = [
-  {
-    id: "1",
-    name: "Alice Johnson",
-    email: "alice@techcorp.com",
-    status: "new",
-    source: "Chat Widget",
-    createdAt: "2024-12-01T10:30:00Z",
-    summary: "Interested in enterprise plan for team of 50+",
-  },
-  {
-    id: "2",
-    name: "Bob Smith",
-    email: "bob@startup.io",
-    status: "in_progress",
-    source: "Contact Form",
-    createdAt: "2024-11-28T14:20:00Z",
-    summary: "Looking for pricing on SMB package",
-  },
-  {
-    id: "3",
-    name: "Carol White",
-    email: "carol@agency.com",
-    status: "open",
-    source: "Chat Widget",
-    createdAt: "2024-11-25T09:15:00Z",
-    summary: "Wants demo for entire team",
-  },
-  {
-    id: "4",
-    name: "David Lee",
-    email: "david@corp.com",
-    status: "closed",
-    source: "Referral",
-    createdAt: "2024-11-20T16:45:00Z",
-    summary: "Purchased annual enterprise license",
-  },
-  {
-    id: "5",
-    name: "Eva Martinez",
-    email: "eva@business.net",
-    status: "new",
-    source: "Chat Widget",
-    createdAt: "2024-12-02T11:00:00Z",
-    summary: "Asking about API integrations",
-  },
-];
+import { useLeads } from "@/hooks/use-leads";
+import { useAuth } from "@/providers/AuthProvider";
+
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export default function LeadsPage() {
+  const { user, isLoading } = useAuth();
+  const { leads } = useLeads({ tenantId: user?.tenantId });
+  const queryClient = useQueryClient();
+
+  const { data: gmailStatus } = useQuery({
+    queryKey: ["gmail-status"],
+    queryFn: async () => {
+      const res = await fetch("/api/integrations/gmail/status");
+      if (!res.ok) {
+        throw new Error("Failed to fetch Gmail status");
+      }
+      const data = await res.json();
+      return data as { connected: boolean; email?: string };
+    },
+  });
+
+  useEffect(() => {
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type === "GMAIL_CONNECTED") {
+        if (event.data.success) {
+          queryClient.invalidateQueries({ queryKey: ["leads"] });
+          queryClient.invalidateQueries({ queryKey: ["gmail-status"] });
+          // Optionally trigger an immediate sync
+          fetch("/api/cron/gmail-sync");
+        } else {
+          console.error("Gmail connection failed:", event.data.error);
+          alert("Failed to connect Gmail: " + event.data.error);
+        }
+      }
+    };
+
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, [queryClient]);
+
+  const handleConnectGmail = () => {
+    const width = 500;
+    const height = 600;
+    const left = window.screen.width / 2 - width / 2;
+    const top = window.screen.height / 2 - height / 2;
+
+    window.open(
+      "/api/integrations/gmail/auth",
+      "GmailConnect",
+      `width=${width},height=${height},left=${left},top=${top}`
+    );
+  };
+
+  const handleDisconnect = async () => {
+    if (!confirm("Are you sure you want to disconnect Gmail?")) return;
+    try {
+      const res = await fetch("/api/integrations/gmail/disconnect", {
+        method: "POST",
+      });
+      if (res.ok) {
+        queryClient.setQueryData(["gmail-status"], { connected: false });
+      } else {
+        alert("Failed to disconnect Gmail");
+      }
+    } catch (err) {
+      console.error("Failed to disconnect", err);
+      alert("Failed to disconnect");
+    }
+  };
+
+  if (isLoading || leads.isLoading) {
+    return <div>Loading...</div>;
+  }
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -63,13 +88,34 @@ export default function LeadsPage() {
             Manage and track all your leads in one place
           </p>
         </div>
-        <Button className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700">
-          <Plus className="mr-2 h-4 w-4" />
-          Add Lead
-        </Button>
+        <div className="flex gap-2 items-center">
+          {gmailStatus?.connected ? (
+            <div className="flex items-center gap-3 bg-green-50 border border-green-200 px-3 py-1.5 rounded-md">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-sm font-medium text-green-700">
+                  {gmailStatus.email}
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleDisconnect}
+                className="h-7 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                Remove
+              </Button>
+            </div>
+          ) : (
+            <Button variant="outline" onClick={handleConnectGmail}>
+              Connect Gmail
+            </Button>
+          )}
+          <AddLeadDialog />
+        </div>
       </div>
 
-      <LeadsTable data={mockLeads} />
+      <LeadsTable data={leads.data?.leads || []} />
     </div>
   );
 }
