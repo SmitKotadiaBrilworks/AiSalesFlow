@@ -22,11 +22,11 @@ export async function POST(request: Request) {
     let result;
     if (type === "document") {
       result = await uploadDocument(dataUrl, {
-        folder: "assets/media_library/folders/home/sales_force",
+        folder: "/sales_flow/documents",
       });
     } else {
       result = await uploadImage(dataUrl, {
-        folder: "assets/media_library/folders/home/sales_force",
+        folder: "/sales_flow/profile_images",
       });
     }
 
