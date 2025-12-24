@@ -34,8 +34,12 @@ export async function parseEmail(
     const fromEmail = fromAddress?.address || "";
 
     // Extract recipient(s)
-    const toAddresses = parsed.to?.value || [];
-    const to = toAddresses.map((addr) => addr.address);
+    const toAddresses = Array.isArray(parsed.to)
+      ? parsed.to.flatMap((addr) => addr.value || [])
+      : parsed.to?.value || [];
+    const to = toAddresses
+      .map((addr) => addr.address)
+      .filter((addr): addr is string => addr !== undefined);
 
     // Extract reply-to if available
     const replyToAddress = parsed.replyTo?.value[0];
@@ -46,7 +50,7 @@ export async function parseEmail(
         name: fromName,
         email: fromEmail,
       },
-      to: to.length === 1 ? to[0] : to,
+      to: to.length === 1 ? to[0] : to.length > 0 ? to : "",
       subject: parsed.subject || "",
       text: parsed.text || "",
       html: parsed.html || undefined,
