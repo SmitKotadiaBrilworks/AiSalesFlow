@@ -47,8 +47,7 @@ export const sendEmail = async ({
   try {
     // handling mock transporter overlap with real nodemailer transporter types
     const info = await transporter.sendMail({
-      from:
-        process.env.SMTP_FROM || '"AI SalesForce" <noreply@aisalesforce.com>',
+      from: process.env.SMTP_FROM || '"AI SalesFlow" <noreply@aiSalesFlow.com>',
       to,
       subject,
       text,
@@ -66,10 +65,10 @@ export const sendLeadWelcomeEmail = async (
   leadName: string,
   leadEmail: string
 ) => {
-  const subject = "Welcome to AI SalesForce!";
+  const subject = "Welcome to AI SalesFlow!";
   const text = `Hi ${
     leadName || "there"
-  },\n\nThanks for reaching out! We've received your inquiry and one of our team members will get back to you shortly.\n\nBest,\nThe AI SalesForce Team`;
+  },\n\nThanks for reaching out! We've received your inquiry and one of our team members will get back to you shortly.\n\nBest,\nThe AI SalesFlow Team`;
 
   await sendEmail({
     to: leadEmail,
