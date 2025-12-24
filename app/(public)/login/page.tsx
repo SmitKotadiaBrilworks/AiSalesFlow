@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -16,7 +16,7 @@ import { motion } from "framer-motion";
 import { setAuthToken } from "@/lib/auth-client";
 import { AppLogo, AppName } from "@/components/ui/appLogo";
 
-export default function LoginPage() {
+function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -68,6 +68,68 @@ export default function LoginPage() {
   };
 
   return (
+    <CardContent>
+      {searchParams.get("registered") === "true" && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-md text-sm">
+          Account created successfully! Please sign in.
+        </div>
+      )}
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
+          {error}
+        </div>
+      )}
+      <form onSubmit={handleLogin} className="space-y-4">
+        <div>
+          <label className="text-sm font-medium text-slate-700 mb-1 block">
+            Email
+          </label>
+          <Input
+            type="email"
+            placeholder="you@company.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium text-slate-700 mb-1 block">
+            Password
+          </label>
+          <Input
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </div>
+        <Button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50"
+        >
+          {loading ? "Signing In..." : "Sign In"}
+        </Button>
+      </form>
+
+      <div className="mt-6 text-center text-sm">
+        <p className="text-slate-600">
+          Don&apos;t have an account?{" "}
+          <Link
+            href="/signup"
+            className="text-indigo-600 hover:underline font-medium"
+          >
+            Sign up for free
+          </Link>
+        </p>
+      </div>
+    </CardContent>
+  );
+}
+
+export default function LoginPage() {
+  return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -89,63 +151,15 @@ export default function LoginPage() {
               Enter your credentials to access your dashboard
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            {searchParams.get("registered") === "true" && (
-              <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-md text-sm">
-                Account created successfully! Please sign in.
-              </div>
-            )}
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
-                {error}
-              </div>
-            )}
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-slate-700 mb-1 block">
-                  Email
-                </label>
-                <Input
-                  type="email"
-                  placeholder="you@company.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-slate-700 mb-1 block">
-                  Password
-                </label>
-                <Input
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50"
-              >
-                {loading ? "Signing In..." : "Sign In"}
-              </Button>
-            </form>
-
-            <div className="mt-6 text-center text-sm">
-              <p className="text-slate-600">
-                Don&apos;t have an account?{" "}
-                <Link
-                  href="/signup"
-                  className="text-indigo-600 hover:underline font-medium"
-                >
-                  Sign up for free
-                </Link>
-              </p>
-            </div>
-          </CardContent>
+          <Suspense
+            fallback={
+              <CardContent>
+                <div className="text-center py-4">Loading...</div>
+              </CardContent>
+            }
+          >
+            <LoginForm />
+          </Suspense>
         </Card>
 
         <p className="text-center text-sm text-slate-500 mt-8">
