@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDatabase } from "@/lib/mongodb";
-import { parseEmail, extractNameFromEmail } from "@/lib/email-parser";
+import {
+  parseEmail,
+  extractNameFromEmail,
+  extractReplyText,
+} from "@/lib/email-parser";
 import {
   createLead,
   createMessage,
@@ -139,10 +143,37 @@ export async function POST(request: NextRequest) {
     // Create message from email
     const emailContent = parsedEmail.text || parsedEmail.html || "";
     if (emailContent) {
+      // Check if this is a reply to an existing message
+      const inReplyTo = parsedEmail.inReplyTo || null;
+      let references = parsedEmail.references || null;
+
+      // If we have In-Reply-To, try to find the original message
+      if (inReplyTo) {
+        const originalMessage = await db
+          .collection("messages")
+          .findOne({ email_message_id: inReplyTo });
+
+        if (originalMessage) {
+          // Build references chain
+          const existingRefs = originalMessage.email_references
+            ? originalMessage.email_references
+            : originalMessage.email_message_id || "";
+          references = existingRefs
+            ? `${existingRefs} ${originalMessage.email_message_id}`
+            : originalMessage.email_message_id || null;
+        }
+      }
+
+      // Extract only the reply text, removing quoted content
+      const replyText = extractReplyText(emailContent);
+
       await createMessage(db, {
         lead_id: lead._id,
         sender_type: "lead",
-        content: emailContent,
+        content: replyText || emailContent, // Fallback to full content if extraction fails
+        email_message_id: parsedEmail.messageId || null,
+        email_in_reply_to: inReplyTo,
+        email_references: references,
       });
     }
 
@@ -184,8 +215,10 @@ async function parseEmailFromWebhook(
       text: body.text || body.text_plain || "",
       html: body.html || body.text_html,
       date: body.timestamp ? new Date(body.timestamp * 1000) : new Date(),
-      messageId: body.message_id,
+      messageId: body.message_id || body["Message-Id"],
       replyTo: body.reply_to,
+      inReplyTo: body["In-Reply-To"] || body.in_reply_to,
+      references: body["References"] || body.references,
     };
   }
 
@@ -204,7 +237,10 @@ async function parseEmailFromWebhook(
       text: body["body-plain"] || body["body"] || "",
       html: body["body-html"],
       date: body["timestamp"] ? new Date(body["timestamp"] * 1000) : new Date(),
-      messageId: body["Message-Id"],
+      messageId: body["Message-Id"] || body.message_id,
+      replyTo: body["reply-to"],
+      inReplyTo: body["In-Reply-To"] || body.in_reply_to,
+      references: body["References"] || body.references,
     };
   }
 

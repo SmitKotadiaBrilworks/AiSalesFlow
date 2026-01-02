@@ -234,6 +234,12 @@ export async function createMessage(
     content: input.content,
     created_at: new Date(),
     read_at: null,
+    // Email threading metadata
+    email_message_id: input.email_message_id || null,
+    email_in_reply_to: input.email_in_reply_to || null,
+    email_references: input.email_references || null,
+    gmail_thread_id: input.gmail_thread_id || null,
+    gmail_message_id: input.gmail_message_id || null,
   };
 
   const result = await db

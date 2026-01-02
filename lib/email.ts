@@ -105,3 +105,149 @@ export const sendNewLeadNotification = async (
     text,
   });
 };
+
+/**
+ * Send an inbox reply to a lead via email with proper threading
+ * Uses Gmail if connected, otherwise falls back to SMTP
+ */
+export const sendInboxReply = async (
+  leadEmail: string,
+  leadName: string | null,
+  messageContent: string,
+  senderName: string,
+  tenantId: string,
+  leadId: string
+) => {
+  // Get previous messages to find threading info
+  const { getDatabase } = await import("@/lib/mongodb");
+  const { getTenantById, getMessagesByLead } = await import(
+    "@/lib/database.helpers"
+  );
+  const { ObjectId } = await import("mongodb");
+
+  const db = await getDatabase();
+  const messages = await getMessagesByLead(db, leadId);
+
+  // Find the most recent message from the lead (to get their Message-ID)
+  const lastLeadMessage = messages
+    .filter((m) => m.sender_type === "lead")
+    .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())[0];
+
+  // Find the last message in this conversation for references
+  const lastMessage = messages.length > 0 ? messages[0] : null;
+
+  // Determine subject - use original subject with "Re:" prefix if replying
+  let subject = `Reply from ${senderName}`;
+  if (lastLeadMessage?.email_message_id) {
+    // If we're replying to an existing thread, try to preserve the original subject
+    // For now, we'll use a generic reply subject, but this could be enhanced
+    // to extract the original subject from the first message in the thread
+    subject = `Re: Reply from ${senderName}`;
+  }
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <p>Hi ${leadName || "there"},</p>
+      <p>${messageContent.replace(/\n/g, "<br>")}</p>
+      <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+      <p style="color: #666; font-size: 12px;">
+        This email was sent from the AI SalesFlow inbox.<br>
+        To reply, simply respond to this email.
+      </p>
+    </div>
+  `;
+
+  const text = `Hi ${
+    leadName || "there"
+  },\n\n${messageContent}\n\n---\nThis email was sent from the AI SalesFlow inbox.\nTo reply, simply respond to this email.`;
+
+  // Generate Message-ID for threading
+  const messageId = `<${Date.now()}-${Math.random()
+    .toString(36)
+    .substring(7)}@aisalesflow.com>`;
+
+  // Prepare threading metadata
+  const inReplyTo = lastLeadMessage?.email_message_id || null;
+  const references = lastLeadMessage?.email_references
+    ? `${lastLeadMessage.email_references} ${lastLeadMessage.email_message_id}`
+    : lastLeadMessage?.email_message_id || null;
+
+  try {
+    // Try to send via Gmail if tenant has it connected
+    const tenant = await getTenantById(db, new ObjectId(tenantId));
+    const { sendGmailMessage } = await import("@/lib/gmail");
+
+    if (
+      tenant?.email_sync?.enabled &&
+      tenant.email_sync.provider === "gmail" &&
+      tenant.email_sync.gmail_tokens
+    ) {
+      // Send via Gmail with threading
+      const result = await sendGmailMessage(tenant.email_sync.gmail_tokens, {
+        to: leadEmail,
+        subject,
+        text,
+        html,
+        from: senderName,
+        // Add threading headers if we have previous messages
+        inReplyTo: inReplyTo || undefined,
+        references: references || undefined,
+        threadId: lastMessage?.gmail_thread_id || undefined,
+      });
+
+      console.log(`📧 Email sent to ${leadEmail} via Gmail (threaded)`);
+
+      return {
+        success: true,
+        method: "gmail",
+        emailMetadata: {
+          email_message_id: result.messageId,
+          email_in_reply_to: inReplyTo,
+          email_references: references,
+          gmail_thread_id:
+            result.threadId || lastMessage?.gmail_thread_id || null,
+          gmail_message_id: result.id || null,
+        },
+      };
+    }
+  } catch (error) {
+    console.error("Error sending via Gmail, falling back to SMTP:", error);
+  }
+
+  // Fallback to SMTP with threading headers
+  try {
+    const mailOptions: nodemailer.SendMailOptions = {
+      from: process.env.SMTP_FROM || '"AI SalesFlow" <noreply@aiSalesFlow.com>',
+      to: leadEmail,
+      subject,
+      text,
+      html,
+      messageId, // Set our generated Message-ID
+    };
+
+    // Add threading headers if replying
+    if (inReplyTo) {
+      mailOptions.inReplyTo = inReplyTo;
+      mailOptions.references = references || inReplyTo;
+    }
+
+    const info = await transporter.sendMail(mailOptions);
+
+    console.log(`📧 Email sent to ${leadEmail} via SMTP (threaded)`);
+
+    return {
+      success: true,
+      method: "smtp",
+      emailMetadata: {
+        email_message_id: messageId,
+        email_in_reply_to: inReplyTo,
+        email_references: references,
+        gmail_thread_id: null,
+        gmail_message_id: null,
+      },
+    };
+  } catch (error) {
+    console.error("Error sending email via SMTP:", error);
+    return { success: false, method: "smtp", emailMetadata: null };
+  }
+};

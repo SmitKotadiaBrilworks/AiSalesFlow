@@ -45,7 +45,7 @@ export async function generateLeadSummary(
     `;
 
     const result = await googleGenAI.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-1.5-flash",
       contents: prompt,
     });
     const text = result.text || null;
