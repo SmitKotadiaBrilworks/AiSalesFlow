@@ -1,0 +1,30 @@
+name: Gmail Sync Cron
+
+on:
+  schedule:
+    # Run every 5 minutes
+    - cron: "*/5 * * * *"
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger Gmail Sync
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X GET "${{ secrets.CRON_URL }}")
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+
+          echo "Response: $body"
+          echo "HTTP Code: $http_code"
+
+          if [ "$http_code" -ne 200 ]; then
+            echo "Cron job failed with HTTP $http_code"
+            exit 1
+          fi
+
+          echo "Cron job executed successfully"
+        env:
+          CRON_URL: ${{ secrets.CRON_URL }}
