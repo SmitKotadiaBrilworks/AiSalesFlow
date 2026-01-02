@@ -29,8 +29,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (secret !== expectedSecret) {
-      console.warn("Unauthorized cron attempt");
+    // Decode URL-encoded secret (handles special characters like @)
+    const decodedSecret = secret ? decodeURIComponent(secret) : null;
+    const trimmedSecret = decodedSecret?.trim();
+    const trimmedExpected = expectedSecret.trim();
+
+    // Debug logging (remove in production if needed)
+    if (trimmedSecret !== trimmedExpected) {
+      console.warn("Unauthorized cron attempt", {
+        receivedLength: trimmedSecret?.length || 0,
+        expectedLength: trimmedExpected.length,
+        receivedPrefix: trimmedSecret?.substring(0, 3) || "null",
+        expectedPrefix: trimmedExpected.substring(0, 3),
+      });
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
