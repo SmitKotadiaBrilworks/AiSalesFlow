@@ -105,6 +105,7 @@ export interface Lead {
   phone?: string | null;
   summary?: string | null; // AI generated summary
   ai_analysis?: AIAnalysis | null;
+  gmail_thread_id?: string | null;
 }
 
 export interface LeadInput {
@@ -143,6 +144,12 @@ export interface Message {
   content: string;
   created_at: Date;
   read_at?: Date | null;
+  // Email threading metadata
+  email_message_id?: string | null; // RFC 2822 Message-ID
+  email_in_reply_to?: string | null; // Message-ID this is replying to
+  email_references?: string | null; // Full References header
+  gmail_thread_id?: string | null; // Gmail thread ID
+  gmail_message_id?: string | null; // Gmail API message ID
 }
 
 export interface MessageInput {
@@ -150,11 +157,22 @@ export interface MessageInput {
   sender_type: SenderType;
   sender_id?: ObjectId | string | null;
   content: string;
+  // Email threading metadata (optional)
+  email_message_id?: string | null;
+  email_in_reply_to?: string | null;
+  email_references?: string | null;
+  gmail_thread_id?: string | null;
+  gmail_message_id?: string | null;
 }
 
 export interface MessageUpdate {
   content?: string;
   read_at?: Date | null;
+  email_message_id?: string | null;
+  email_in_reply_to?: string | null;
+  email_references?: string | null;
+  gmail_thread_id?: string | null;
+  gmail_message_id?: string | null;
 }
 
 // ============================================

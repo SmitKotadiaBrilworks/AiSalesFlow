@@ -3,6 +3,7 @@ import { Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/lib/queryProvider";
 import { AuthProvider } from "@/providers/AuthProvider";
+import { Toaster } from "sonner";
 
 const geistSans = Plus_Jakarta_Sans({
   variable: "--font-geist-sans",
@@ -33,6 +34,7 @@ export default function RootLayout({
         <QueryProvider>
           <AuthProvider>{children}</AuthProvider>
         </QueryProvider>
+        <Toaster position="top-right" richColors />
       </body>
     </html>
   );

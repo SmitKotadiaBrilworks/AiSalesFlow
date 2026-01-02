@@ -8,6 +8,7 @@ import { RecentLeads } from "@/components/dashboard/recent-leads";
 import { RecentActivity } from "@/components/dashboard/recent-activity";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, AlertCircle } from "lucide-react";
+import { useAuth } from "@/providers/AuthProvider";
 
 interface DashboardData {
   stats: {
@@ -57,12 +58,10 @@ interface DashboardData {
   };
 }
 
-async function fetchDashboardData(): Promise<DashboardData> {
-  // TODO: Get tenantId from authenticated user session
-  // For now, we'll use a placeholder - you'll need to update this once auth is implemented
-  const tenantId = "000000000000000000000000"; // Placeholder
-
-  const response = await fetch(`/api/dashboard/stats?tenantId=${tenantId}`);
+async function fetchDashboardData(user: any): Promise<DashboardData> {
+  const response = await fetch(
+    `/api/dashboard/stats?tenantId=${user?.tenantId}`
+  );
 
   if (!response.ok) {
     throw new Error("Failed to fetch dashboard data");
@@ -72,9 +71,10 @@ async function fetchDashboardData(): Promise<DashboardData> {
 }
 
 export default function DashboardPage() {
+  const { user } = useAuth();
   const { data, isLoading, error } = useQuery({
-    queryKey: ["dashboard-stats"],
-    queryFn: fetchDashboardData,
+    queryKey: ["dashboard-stats", user?.tenantId],
+    queryFn: () => fetchDashboardData(user),
     refetchInterval: 30000, // Refetch every 30 seconds
   });
 
