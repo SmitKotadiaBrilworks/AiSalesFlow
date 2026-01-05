@@ -36,11 +36,19 @@
 ## 🔄 Alternative: cron-job.org (No GitHub Required)
 
 1. **Sign up** at [cron-job.org](https://cron-job.org)
-2. **Create cronjob**:
+2. **Important:** Use your **PRODUCTION domain**, not preview:
+   - ✅ Production: `https://your-app.vercel.app/api/cron/gmail-sync?secret=YOUR_CRON_SECRET`
+   - ❌ Preview: `https://your-app-git-branch-projects.vercel.app/...` (has deployment protection)
+3. **Create cronjob**:
    - URL: `https://your-app.vercel.app/api/cron/gmail-sync?secret=YOUR_CRON_SECRET`
    - Schedule: `Every 5 minutes` or `*/5 * * * *`
    - Method: `GET`
-3. **Save** and test with "Run now"
+4. **Save** and test with "Run now"
+
+**⚠️ If you see "Authentication Required" error:**
+
+- You're using a preview URL instead of production
+- See [CRON_VERCEL_DEPLOYMENT_PROTECTION.md](./CRON_VERCEL_DEPLOYMENT_PROTECTION.md) for details
 
 ---
 
