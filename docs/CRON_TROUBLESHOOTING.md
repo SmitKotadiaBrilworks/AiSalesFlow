@@ -1,6 +1,33 @@
-# Cron Job Troubleshooting: 401 Unauthorized
+# Cron Job Troubleshooting Guide
 
-## Problem: 401 Unauthorized Error
+## Problem 1: Vercel Authentication Required (Deployment Protection)
+
+If you're seeing an HTML page with "Authentication Required" or being redirected to Vercel SSO, this means **Vercel Deployment Protection** is enabled on your preview branch.
+
+### Solution: Use Production Domain
+
+**The issue:** Preview deployments (like `git-branchname-projects.vercel.app`) have deployment protection enabled by default.
+
+**Fix:** Use your **production domain** instead:
+
+1. **Find your production domain:**
+
+   - Go to Vercel Dashboard → Your Project → **Settings** → **Domains**
+   - Look for your production domain (usually `your-app.vercel.app` or a custom domain)
+   - **OR** check your main branch deployment URL
+
+2. **Update cron-job.org:**
+
+   - Use the production URL: `https://your-app.vercel.app/api/cron/gmail-sync?secret=YOUR_SECRET`
+   - **NOT** the preview URL: `https://your-app-git-branch-projects.vercel.app/...`
+
+3. **Alternative: Disable Deployment Protection (Not Recommended)**
+   - Vercel Dashboard → Your Project → **Settings** → **Deployment Protection**
+   - Disable for preview deployments (less secure)
+
+---
+
+## Problem 2: 401 Unauthorized Error
 
 If you're seeing `401 Unauthorized` when your cron job runs, it means the secret in your URL doesn't match the `CRON_SECRET` environment variable in Vercel.
 
