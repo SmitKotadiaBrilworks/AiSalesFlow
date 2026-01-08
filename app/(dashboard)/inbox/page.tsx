@@ -194,28 +194,40 @@ export default function InboxPage() {
                     <div
                       key={msg.id}
                       className={cn(
-                        "flex flex-col max-w-[80%]",
+                        "flex flex-col",
                         msg.sender === "lead"
                           ? "self-start"
-                          : "self-end items-end"
+                          : "self-end items-end "
                       )}
                     >
                       <div
                         className={cn(
-                          "p-3 rounded-lg text-sm shadow-sm",
+                          "p-3 rounded-lg text-sm shadow-sm break-words max-w-[80%]",
                           msg.sender === "lead"
                             ? "bg-white text-slate-800 border"
                             : msg.sender === "ai"
                             ? "bg-indigo-50 text-indigo-900 border border-indigo-100"
                             : "bg-indigo-600 text-white"
                         )}
+                        style={{
+                          wordBreak: "break-word",
+                          overflowWrap: "anywhere",
+                        }}
                       >
                         {msg.sender === "ai" && (
                           <span className="text-xs font-bold block mb-1 text-indigo-500">
                             AI Assistant
                           </span>
                         )}
-                        {msg.content}
+                        <span
+                          className="break-words whitespace-pre-wrap"
+                          style={{
+                            wordBreak: "break-word",
+                            overflowWrap: "anywhere",
+                          }}
+                        >
+                          {msg.content}
+                        </span>
                       </div>
                       <span className="text-[10px] text-muted-foreground mt-1 px-1">
                         {msg.time}

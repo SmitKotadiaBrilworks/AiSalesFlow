@@ -227,7 +227,7 @@ export function EmailSyncSettings() {
         <Button
           onClick={handleSave}
           disabled={saving}
-          className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+          className="w-fit bg-linear-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
         >
           {saving ? "Saving..." : "Save Configuration"}
         </Button>
