@@ -46,6 +46,9 @@ export async function GET(request: NextRequest) {
 
       const lastMessage = messages[0] || null;
 
+      // Use last message time for sorting, fallback to lead creation time
+      const lastActivityAt = lastMessage?.created_at || lead.created_at;
+
       return {
         id: lead._id.toString(),
         leadId: lead._id.toString(),
@@ -60,14 +63,19 @@ export async function GET(request: NextRequest) {
         unreadCount,
         status: lead.status,
         createdAt: lead.created_at,
+        lastActivityAt, // Add this for sorting by most recent message
       };
     });
 
     const conversations = await Promise.all(conversationsPromises);
 
-    // Sort by most recent activity
+    // Sort by most recent message activity (last message time)
+    // Conversations with messages appear first, sorted by most recent message
+    // Conversations without messages appear last, sorted by lead creation time
     conversations.sort((a, b) => {
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      const timeA = new Date(a.lastActivityAt).getTime();
+      const timeB = new Date(b.lastActivityAt).getTime();
+      return timeB - timeA; // Most recent first
     });
 
     return NextResponse.json({
