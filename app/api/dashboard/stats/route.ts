@@ -51,6 +51,7 @@ export async function GET(request: NextRequest) {
 
     // Calculate date ranges
     const now = new Date();
+    const last24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000); // Last 24 hours
     const startOfDay = new Date(
       now.getFullYear(),
       now.getMonth(),
@@ -95,7 +96,7 @@ export async function GET(request: NextRequest) {
       .aggregate([
         {
           $match: {
-            created_at: { $gte: startOfDay },
+            created_at: { $gte: last24Hours }, // Last 24 hours, not just today
           },
         },
         {
@@ -162,31 +163,33 @@ export async function GET(request: NextRequest) {
     const newMessagesTodayCount =
       newMessagesToday.length > 0 ? newMessagesToday[0].total : 0;
 
-    // Closed deals
+    // Closed deals (total)
     const closedDeals = await db.collection(COLLECTIONS.LEADS).countDocuments({
       tenant_id: tenantId,
       status: "closed",
     });
 
-    // Closed deals this week
+    // Closed deals this week (leads that were closed in the last 7 days)
+    // Check both updated_at (when status was changed) and created_at (if created as closed)
     const closedDealsThisWeek = await db
       .collection(COLLECTIONS.LEADS)
       .countDocuments({
         tenant_id: tenantId,
         status: "closed",
-        updated_at: { $gte: startOfWeek },
+        $or: [
+          { updated_at: { $gte: startOfWeek } },
+          {
+            created_at: { $gte: startOfWeek },
+            status: "closed", // Created as closed this week
+          },
+        ],
       });
 
-    // Calculate average response time (simplified - time between lead creation and first message)
-    const avgResponseTime = await db
+    // Calculate average response time (time between lead message and user/AI response)
+    // Get all messages for the tenant, sorted by lead and time
+    const allMessages = await db
       .collection(COLLECTIONS.MESSAGES)
       .aggregate([
-        {
-          $match: {
-            sender_type: { $in: ["user", "ai"] },
-            created_at: { $gte: startOfMonth },
-          },
-        },
         {
           $lookup: {
             from: COLLECTIONS.LEADS,
@@ -201,26 +204,52 @@ export async function GET(request: NextRequest) {
         {
           $match: {
             "lead.tenant_id": tenantId,
+            created_at: { $gte: startOfMonth },
           },
+        },
+        {
+          $sort: { lead_id: 1, created_at: 1 },
         },
         {
           $project: {
-            responseTime: {
-              $subtract: ["$created_at", "$lead.created_at"],
-            },
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            avgTime: { $avg: "$responseTime" },
+            lead_id: 1,
+            sender_type: 1,
+            created_at: 1,
           },
         },
       ])
       .toArray();
 
+    // Calculate response times: for each user/AI message, find the previous lead message
+    let totalResponseTime = 0;
+    let responseCount = 0;
+    const leadMessageMap = new Map<string, Date | null>();
+
+    for (const msg of allMessages) {
+      const leadId = msg.lead_id.toString();
+
+      if (msg.sender_type === "lead") {
+        // Store the most recent lead message time for this lead
+        leadMessageMap.set(leadId, msg.created_at);
+      } else if (msg.sender_type === "user" || msg.sender_type === "ai") {
+        // This is a response - check if there was a previous lead message
+        const lastLeadMessageTime = leadMessageMap.get(leadId);
+        if (lastLeadMessageTime) {
+          const responseTime =
+            msg.created_at.getTime() - lastLeadMessageTime.getTime();
+          // Only count reasonable response times (positive and less than 7 days)
+          if (responseTime > 0 && responseTime < 7 * 24 * 60 * 60 * 1000) {
+            totalResponseTime += responseTime;
+            responseCount++;
+          }
+          // Reset after response (wait for next lead message)
+          leadMessageMap.set(leadId, null);
+        }
+      }
+    }
+
     const avgResponseMs =
-      avgResponseTime.length > 0 ? avgResponseTime[0].avgTime : 0;
+      responseCount > 0 ? totalResponseTime / responseCount : 0;
     const avgResponseSeconds = Math.round(avgResponseMs / 1000);
 
     // Fetch recent leads (last 5)
